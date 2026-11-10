@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import cast
 
 from dota_tracker.application.dtos import (
@@ -20,7 +21,7 @@ from dota_tracker.domain.repositories import (
     PlayerMatchRepository,
     PlayerRepository,
 )
-from dota_tracker.shared.types import AccountId
+from dota_tracker.shared.types import AccountId, HeroId, MatchId, PlayerId
 
 
 class FakeGateway:
@@ -78,6 +79,7 @@ class FakePlayerRepo(PlayerRepository):
         self.added: list[Player] = []
 
     def add(self, player: Player) -> Player:
+        player = replace(player, id=PlayerId(len(self.players) + 1))
         self.added.append(player)
         self.players[player.account_id] = player
         return player
@@ -102,6 +104,7 @@ class FakeMatchRepo(MatchRepository):
         self.added: list[Match] = []
 
     def add(self, match: Match) -> Match:
+        match = replace(match, id=MatchId(len(self.matches) + 1))
         self.added.append(match)
         self.matches[match.match_id] = match
         return match
@@ -149,6 +152,7 @@ class FakeHeroRepo(HeroRepository):
         self.heroes: dict[int, Hero] = {}
 
     def add(self, hero: Hero) -> Hero:
+        hero = replace(hero, id=HeroId(len(self.heroes) + 1))
         self.heroes[hero.hero_id] = hero
         return hero
 

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111217">
+  <meta name="description" content="Your Dota 2 performance, in perspective.">
+  <title>Dota Tracker — Your game, in focus</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <svg class="svg-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol><symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol><symbol id="i-hero" viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 5 3.4 8 8 9 4.6-1 8-4 8-9V7l-8-4Z"/><path d="m9 12 2 2 4-4"/></symbol><symbol id="i-trend" viewBox="0 0 24 24"><path d="m3 17 6-6 4 4 8-8M15 7h6v6"/></symbol><symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6 9a7 7 0 0 1 12-2l2 5M4 12l2 5a7 7 0 0 0 12-2"/></symbol><symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M14 7l5 5-5 5"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol></svg>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Main navigation">
+      <a class="brand" href="#overview" aria-label="Dota Tracker home"><span class="brand-mark"><span></span></span><span class="brand-name">DOTA<span>TRACKER</span><small>THE PLAYER'S COMPANION</small></span></a>
+      <div class="side-label">WORKSPACE</div>
+      <nav class="side-nav" aria-label="Dashboard sections">
+        <button class="nav-link active" data-tab="overview" aria-current="page"><svg><use href="#i-grid"/></svg>Overview <span class="nav-indicator"></span></button>
+        <button class="nav-link" data-tab="matches"><svg><use href="#i-list"/></svg>Matches</button>
+        <button class="nav-link" data-tab="heroes"><svg><use href="#i-hero"/></svg>Heroes</button>
+        <button class="nav-link" data-tab="trends"><svg><use href="#i-trend"/></svg>Trends</button>
+      </nav>
+      <div class="sidebar-bottom"><div class="side-card"><span class="side-card-icon">✦</span><strong>Every match matters.</strong><p>Find the patterns behind your performance.</p></div><div class="side-footer"><span class="status-dot"></span> BUILT FOR THE GAME <span>01 / 04</span></div></div>
+    </aside>
+    <main class="main">
+      <header class="topbar"><div class="breadcrumb"><span>WORKSPACE</span><span class="slash">/</span><strong id="breadcrumb">OVERVIEW</strong></div><div class="top-actions"><span class="top-note"><span class="status-dot"></span> YOUR PERSONAL ANALYTICS</span><button class="icon-button" id="reload" title="Reload saved data" aria-label="Reload saved data"><svg><use href="#i-refresh"/></svg></button></div></header>
+      <div class="content">
+        <div class="page-heading"><div><div class="eyebrow"><span></span> YOUR PERFORMANCE, IN PERSPECTIVE</div><h1>Know your game<span class="accent">.</span></h1><p>Every match tells a story. Make your next one count.</p></div><div class="heading-index">PLAYER ANALYTICS <span> / </span> 01</div></div>
+        <section class="player-banner" aria-label="Player profile"><div class="banner-art" aria-hidden="true"><span class="art-ring ring-one"></span><span class="art-ring ring-two"></span><span class="art-slash"></span><span class="art-cross">✳</span></div><div class="banner-main"><div class="avatar" id="player-avatar"><span>DT</span></div><div class="player-info"><div class="eyebrow light">PLAYER PROFILE <span class="eyebrow-line"></span></div><h2 id="player-name">Your next chapter starts here.</h2><p id="player-detail">Add a player to bring your match history into focus.</p></div></div><div class="banner-actions"><label class="select-label" for="player-select">SAVED PLAYERS</label><select id="player-select" aria-label="Switch saved player"><option value="">No saved players</option></select><button id="sync-current" class="button button-light" disabled><svg><use href="#i-refresh"/></svg> Sync player</button></div><div class="banner-bottom"><span><span class="live-dot"></span> PLAYER OVERVIEW</span><span id="sync-label">NOT SYNCED YET</span></div></section>
+        <section class="connect-bar" aria-label="Add or sync a player"><div><span class="connect-icon">＋</span><div><strong>Track a player</strong><p>Enter a Steam32 / OpenDota account ID.</p></div></div><form id="player-form"><label class="sr-only" for="account-id">Steam32 or OpenDota account ID</label><input id="account-id" name="account_id" inputmode="numeric" pattern="[0-9]+" required placeholder="Enter account ID" autocomplete="off"><button class="button button-primary" type="submit">Sync player <svg><use href="#i-arrow"/></svg></button></form></section>
+        <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+        <div class="section-top"><div><div class="eyebrow"><span></span> THE BREAKDOWN</div><h2 id="section-title">Performance overview</h2><p id="section-description">A closer look at the numbers behind your game.</p></div><div class="section-meta"><span class="status-dot"></span> BASED ON YOUR MATCH HISTORY</div></div>
+        <nav class="tabs" aria-label="Dashboard views"><button class="tab active" data-tab="overview" aria-current="page">Overview</button><button class="tab" data-tab="matches">Matches</button><button class="tab" data-tab="heroes">Heroes</button><button class="tab" data-tab="trends">Trends</button></nav>
+        <div class="filter-bar"><div class="filter-intro"><span class="filter-icon">≡</span><span>FILTER BY</span></div><div class="filters"><label>Recent <select id="filter-count"><option value="50">Last 50 matches</option><option value="20">Last 20 matches</option><option value="10">Last 10 matches</option><option value="all">All matches</option></select></label><label>Outcome <select id="filter-outcome"><option value="all">All outcomes</option><option value="win">Wins</option><option value="loss">Losses</option><option value="unknown">Unknown</option></select></label><label>Hero <select id="filter-hero"><option value="all">All heroes</option></select></label><label class="search-field"><svg><use href="#i-search"/></svg><span class="sr-only">Search matches or heroes</span><input id="filter-search" type="search" placeholder="Search matches or heroes"></label><button id="clear-filters" class="text-button">Reset</button></div></div>
+        <div id="loading" class="state-panel" hidden><span class="spinner"></span><strong>Loading your dashboard</strong><p>Getting your match history ready.</p></div>
+        <div id="empty" class="state-panel"><span class="empty-icon">✦</span><strong>Your story starts with a match.</strong><p>Sync a player above to see your performance dashboard.</p></div>
+        <div id="dashboard" hidden>
+          <section id="view-match-details" class="view match-details" aria-labelledby="match-heading" hidden>
+            <button type="button" class="match-back" id="match-back">← Back to dashboard</button>
+            <h2 id="match-heading" class="sr-only">Match details</h2>
+            <div id="match-status" role="status" aria-live="polite"></div>
+            <div id="match-content"></div>
+          </section>
+          <section id="view-overview" class="view" aria-label="Overview">
+            <div class="metric-grid" id="metrics"></div>
+            <div class="dashboard-grid"><article class="card chart-card"><div class="card-head"><div><div class="card-kicker">THE BIG PICTURE <span> / 01</span></div><h3>Performance over time</h3><p>Match-by-match kills · undated matches excluded</p></div><span class="chart-tag"><span></span> KILLS</span></div><div id="overview-chart" class="chart-container"></div></article><article class="card record-card"><div class="card-head"><div><div class="card-kicker">THE RESULTS <span> / 02</span></div><h3>Win / loss</h3><p>Known match outcomes</p></div></div><div id="record-chart"></div></article></div>
+            <div class="dashboard-grid bottom-grid"><article class="card table-card"><div class="card-head"><div><div class="card-kicker">YOUR RECENT ACTIVITY <span> / 03</span></div><h3>Latest matches</h3><p>Your most recent games at a glance</p></div><button class="link-button" data-tab="matches">All matches <svg><use href="#i-arrow"/></svg></button></div><div id="overview-matches"></div></article><article class="card heroes-card"><div class="card-head"><div><div class="card-kicker">YOUR ROSTER <span> / 04</span></div><h3>Most played heroes</h3><p>Heroes in your selected matches</p></div><button class="link-button" data-tab="heroes" aria-label="View all heroes"><svg><use href="#i-arrow"/></svg></button></div><div id="overview-heroes"></div></article></div>
+          </section>
+          <section id="view-matches" class="view" aria-label="Matches" hidden><article class="card table-card full-card"><div class="card-head"><div><div class="card-kicker">MATCH HISTORY <span> / 01</span></div><h3>All matches</h3><p>Choose a column heading to sort your matches.</p></div><span id="match-count" class="subtle-tag"></span></div><div id="matches-table"></div></article></section>
+          <section id="view-heroes" class="view" aria-label="Heroes" hidden><article class="card full-card"><div class="card-head"><div><div class="card-kicker">YOUR ROSTER <span> / 01</span></div><h3>Hero performance</h3><p>Results and averages for heroes in your selection.</p></div><span id="hero-count" class="subtle-tag"></span></div><div id="hero-table"></div></article></section>
+          <section id="view-trends" class="view" aria-label="Trends" hidden><div class="trend-grid"><article class="card chart-card"><div class="card-head"><div><div class="card-kicker">COMBAT <span> / 01</span></div><h3>Kills</h3><p>Dated matches, oldest to newest</p></div><span class="chart-tag"><span></span> KILLS</span></div><div id="trend-kills" class="chart-container"></div></article><article class="card chart-card"><div class="card-head"><div><div class="card-kicker">SURVIVAL <span> / 02</span></div><h3>Deaths</h3><p>Dated matches, oldest to newest</p></div><span class="chart-tag"><span></span> DEATHS</span></div><div id="trend-deaths" class="chart-container"></div></article><article class="card chart-card"><div class="card-head"><div><div class="card-kicker">ECONOMY <span> / 03</span></div><h3>Gold per minute</h3><p>Dated matches, oldest to newest</p></div><span class="chart-tag"><span></span> GPM</span></div><div id="trend-gpm" class="chart-container"></div></article><article class="card chart-card"><div class="card-head"><div><div class="card-kicker">PROGRESSION <span> / 04</span></div><h3>Experience per minute</h3><p>Dated matches, oldest to newest</p></div><span class="chart-tag"><span></span> XPM</span></div><div id="trend-xpm" class="chart-container"></div></article></div><article class="card chart-card trend-wide"><div class="card-head"><div><div class="card-kicker">COMBAT <span> / 05</span></div><h3>Hero damage</h3><p>Damage dealt to heroes in dated matches, oldest to newest</p></div><span class="chart-tag"><span></span> DAMAGE</span></div><div id="trend-damage" class="chart-container"></div></article></section>
+        </div>
+        <footer class="footer"><span>© DOTA TRACKER <span class="footer-separator">/</span> MADE FOR THE JOURNEY</span><span>Data sourced from OpenDota <span class="footer-separator">✦</span></span></footer>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

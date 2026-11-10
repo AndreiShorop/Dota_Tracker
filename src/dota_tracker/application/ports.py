@@ -6,13 +6,39 @@ Infrastructure adapters implement these protocols.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from dota_tracker.domain.value_objects import MatchId
 from dota_tracker.shared.types import AccountId
 
 if TYPE_CHECKING:
-    from dota_tracker.application.dtos import HeroDTO, ItemDTO, MatchDTO, PlayerDTO
+    from dota_tracker.application.dtos import (
+        DashboardPlayer,
+        HeroDTO,
+        ItemDTO,
+        MatchDetail,
+        MatchDTO,
+        PlayerDashboard,
+        PlayerDTO,
+    )
+
+
+class DashboardReader(Protocol):
+    """Read stored dashboard projections without exposing persistence types."""
+
+    def list_players(self) -> list[DashboardPlayer]:
+        """Return all stored players."""
+
+    def get_dashboard(self, account_id: AccountId) -> PlayerDashboard | None:
+        """Return a stored dashboard or None when the player is absent."""
+
+
+class MatchDetailReader(Protocol):
+    """Read a complete match without exposing the external provider."""
+
+    def get_match_detail(self, match_id: int) -> MatchDetail | None:
+        """Return match detail or None if the match is absent."""
 
 
 @runtime_checkable
@@ -28,10 +54,10 @@ class OpenDotaGateway(Protocol):
     def get_match(self, match_id: MatchId) -> MatchDTO | None:
         """Fetch a single match by OpenDota match id."""
 
-    def get_heroes(self) -> list[HeroDTO]:
+    def get_heroes(self) -> Sequence[HeroDTO]:
         """Fetch the full hero catalog."""
 
-    def get_items(self) -> list[ItemDTO]:
+    def get_items(self) -> Sequence[ItemDTO]:
         """Fetch the full item catalog."""
 
 
@@ -46,4 +72,4 @@ class UnitOfWork(Protocol):
         """Roll back the current unit of work."""
 
 
-__all__ = ["OpenDotaGateway", "UnitOfWork"]
+__all__ = ["DashboardReader", "OpenDotaGateway", "UnitOfWork"]

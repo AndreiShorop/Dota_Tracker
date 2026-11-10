@@ -109,6 +109,8 @@ Enforcement strategies: package boundaries, import-lint rules (future), code rev
 
 ## Presentation Layer
 
+The local FastAPI web adapter exposes player-list, dashboard, and sync endpoints and serves bundled static assets. Controllers call application use cases; a request-scoped composition root wires the SQLAlchemy dashboard read port and existing sync workflow, closes database sessions and the OpenDota client, and translates infrastructure failures into safe API errors. Dashboard projections join internal persistence keys while exposing OpenDota match and hero identifiers. The server defaults to loopback and has no authentication; it is not a public-facing deployment configuration.
+
 **Location (planned):** `src/dota_tracker/presentation/`
 
 **Responsibilities:**

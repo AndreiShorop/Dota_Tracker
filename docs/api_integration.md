@@ -10,6 +10,31 @@ Primary goals:
 - Strict response validation before persistence/analytics
 - Configurable behavior via environment-driven settings
 
+## Web match detail contract
+
+`GET /api/matches/{match_id}` fetches live OpenDota match detail without accessing the
+database. The positive match ID must fit a signed 64-bit integer. The JSON object contains
+`match_id`, `start_time` (UTC ISO 8601 string or null), `duration_seconds`, `radiant_win`,
+`radiant_score`, `dire_score`, and `players`. Each player contains `account_id`, `player_slot`,
+`hero_id`, `hero_name`, `hero_image`, `persona_name`, `win`, `kills`, `deaths`, `assists`,
+`gold_per_min`, `xp_per_min`, `last_hits`, `hero_damage`, `tower_damage`, `hero_healing`,
+`level`, and `items`. Values not supplied by OpenDota are null; anonymous account IDs are null.
+`win` is derived from `radiant_win` and `player_slot` (`< 128` is Radiant), or null if either
+is missing. Player order is the provider's order.
+
+`items` is an array of occupied **final inventory** slots, not purchase history. Each entry
+has numeric `slot`, numeric `id`, localized `name`, and `image`; unknown catalog entries retain
+their ID with null metadata. Slots 0–5 are the main inventory, 6–9 correspond to OpenDota
+`backpack_0`–`backpack_3`, and 10–11 to `item_neutral` and `item_neutral2`. Empty or missing
+slots are omitted. Only asset paths matching the expected Steam CDN paths are exposed.
+Availability of slots, statistics, and names depends on OpenDota's match data and current
+catalog, which may not perfectly reflect an older patch.
+
+Responses are 404 for absent matches, 422 for invalid IDs, and 502 for provider/network/schema
+failures, with sanitized error messages. Match data is requested on every call; the two OpenDota
+constants catalogs are cached per provider URL for one hour per process. Each request owns and
+closes its HTTP client. The first call after cache expiry makes up to three upstream requests.
+
 ## OpenDota API Client Design
 
 **Planned location:** `src/dota_tracker/infrastructure/opendota/`

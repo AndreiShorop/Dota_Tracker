@@ -11,6 +11,8 @@ returns each match from the requesting player's perspective.
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -139,11 +141,100 @@ class SyncResult(BaseModel):
     player_matches_synced: int = 0
 
 
+class DashboardPlayer(BaseModel):
+    """Public profile fields shown in the web dashboard."""
+
+    account_id: int
+    persona_name: str | None
+    avatar_url: str | None
+
+
+class DashboardMatch(BaseModel):
+    """A stored match and the requesting player's participation."""
+
+    match_id: int
+    start_time: datetime | None
+    duration_seconds: int | None
+    hero_id: int
+    hero_name: str | None
+    hero_image: str | None
+    win: bool | None
+    kills: int
+    deaths: int
+    assists: int
+    gold_per_min: int | None
+    xp_per_min: int | None
+    last_hits: int | None
+    hero_damage: int | None
+    tower_damage: int | None
+    hero_healing: int | None
+    is_radiant: bool
+    game_mode: int | None
+
+
+class PlayerDashboard(BaseModel):
+    """A profile and its stored recent match history."""
+
+    player: DashboardPlayer
+    matches: list[DashboardMatch]
+    synced_at: datetime | None = None
+
+
+class MatchDetailItem(BaseModel):
+    """One occupied final inventory slot, with optional catalog metadata."""
+
+    slot: int
+    id: int
+    name: str | None
+    image: str | None
+
+
+class MatchDetailPlayer(BaseModel):
+    """A participant in a match, including their final inventory."""
+
+    account_id: int | None
+    player_slot: int | None
+    hero_id: int | None
+    hero_name: str | None
+    hero_image: str | None
+    persona_name: str | None
+    win: bool | None
+    kills: int | None
+    deaths: int | None
+    assists: int | None
+    gold_per_min: int | None
+    xp_per_min: int | None
+    last_hits: int | None
+    hero_damage: int | None
+    tower_damage: int | None
+    hero_healing: int | None
+    level: int | None
+    items: list[MatchDetailItem]
+
+
+class MatchDetail(BaseModel):
+    """Match overview and all available player statistics."""
+
+    match_id: int
+    start_time: datetime | None
+    duration_seconds: int | None
+    radiant_win: bool | None
+    radiant_score: int | None
+    dire_score: int | None
+    players: list[MatchDetailPlayer]
+
+
 __all__ = [
+    "DashboardMatch",
+    "DashboardPlayer",
     "HeroDTO",
     "ItemDTO",
     "MatchDTO",
+    "MatchDetail",
+    "MatchDetailItem",
+    "MatchDetailPlayer",
     "PlayerDTO",
+    "PlayerDashboard",
     "PlayerMatchDTO",
     "SyncResult",
 ]

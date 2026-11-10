@@ -10,16 +10,24 @@ from collections.abc import Sequence
 from datetime import datetime
 
 from dota_tracker.application.dtos import (
+    DashboardPlayer,
     HeroDTO,
     ItemDTO,
+    MatchDetail,
     MatchDTO,
+    PlayerDashboard,
     PlayerDTO,
     PlayerMatchDTO,
     SyncResult,
 )
-from dota_tracker.application.ports import OpenDotaGateway, UnitOfWork
+from dota_tracker.application.ports import (
+    DashboardReader,
+    MatchDetailReader,
+    OpenDotaGateway,
+    UnitOfWork,
+)
 from dota_tracker.domain.entities import Hero, Item, Match, Player, PlayerMatch
-from dota_tracker.domain.exceptions import PlayerNotFoundError
+from dota_tracker.domain.exceptions import MatchNotFoundError, PlayerNotFoundError
 from dota_tracker.domain.repositories import (
     HeroRepository,
     ItemRepository,
@@ -29,6 +37,40 @@ from dota_tracker.domain.repositories import (
 )
 from dota_tracker.shared.types import AccountId, HeroId, ItemId, MatchId, PlayerId
 from dota_tracker.shared.utils import to_datetime
+
+
+class DashboardUseCase:
+    """Read stored players and their dashboard data through a read port."""
+
+    def __init__(self, reader: DashboardReader) -> None:
+        self._reader = reader
+
+    def list_players(self) -> list[DashboardPlayer]:
+        """Return stored player profiles."""
+        return self._reader.list_players()
+
+    def get_dashboard(self, account_id: AccountId) -> PlayerDashboard:
+        """Return a dashboard, raising PlayerNotFoundError for unknown accounts."""
+        dashboard = self._reader.get_dashboard(account_id)
+        if dashboard is None:
+            raise PlayerNotFoundError("Player not found")
+        return dashboard
+
+
+class MatchDetailUseCase:
+    """Fetch match detail independently of the stored dashboard."""
+
+    def __init__(self, reader: MatchDetailReader) -> None:
+        self._reader = reader
+
+    def execute(self, match_id: int) -> MatchDetail:
+        """Return a match or raise when it is not available."""
+        if match_id <= 0 or match_id > 9223372036854775807:
+            raise ValueError("Invalid match ID")
+        detail = self._reader.get_match_detail(match_id)
+        if detail is None:
+            raise MatchNotFoundError("Match not found")
+        return detail
 
 
 class SyncPlayerMatchesUseCase:
