@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Doku &mdash; Dota Tracker Documentation</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --surface: #111827;
+      --surface-hover: #1f2937;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+      --border: #1f2937;
+      --code-bg: #0f172a;
+      --radius: 8px;
+      --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+      --transition: all 0.2s ease;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+    ul { list-style: none; }
+    img { max-width: 100%; display: block; }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
+
+    /* Header */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      backdrop-filter: blur(10px);
+      background: rgba(11, 15, 25, 0.85);
+      border-bottom: 1px solid var(--border);
+    }
+    header .container {
+      display: flex; align-items: center; justify-content: space-between; height: 64px;
+    }
+    .logo {
+      font-size: 1.35rem; font-weight: 700; letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #fff, #a5b4fc);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .nav-links { display: flex; gap: 2rem; }
+    .nav-links a {
+      color: var(--text-muted); font-size: 0.9rem; font-weight: 500;
+      transition: var(--transition); padding: 0.5rem 0; position: relative;
+    }
+    .nav-links a:hover, .nav-links a.active { color: var(--accent); }
+    .nav-links a.active::after {
+      content: ""; position: absolute; bottom: 0; left: 0; right: 0;
+      height: 2px; background: var(--accent); border-radius: 1px;
+    }
+    .menu-toggle { display: none; background: none; border: none;
+      color: var(--text); cursor: pointer; font-size: 1.5rem; }
+
+    /* Layout */
+    .docs-layout { display: flex; padding: 3rem 0; min-height: calc(100vh - 64px); }
+    .sidebar {
+      width: 280px; flex-shrink: 0; padding-right: 2rem;
+      border-right: 1px solid var(--border);
+      position: sticky; top: 80px; height: calc(100vh - 80px);
+      overflow-y: auto;
+    }
+    .sidebar .section-title {
+      font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;
+      color: var(--text-muted); margin-bottom: 1rem; padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar ul { display: flex; flex-direction: column; gap: 0.25rem; }
+    .sidebar a {
+      display: block; padding: 0.6rem 0.8rem; border-radius: var(--radius);
+      color: var(--text-muted); font-size: 0.9rem; transition: var(--transition);
+    }
+    .sidebar a:hover { background: var(--surface-hover); color: var(--text); }
+    .sidebar a.active {
+      background: var(--surface-hover); color: var(--accent);
+      border-left: 3px solid var(--accent); padding-left: 0.5rem;
+    }
+
+    .main { flex: 1; padding: 0 2rem; max-width: none; }
+    article { max-width: 820px; }
+
+    /* Typography */
+    h1 { font-size: 2rem; margin-bottom: 1rem; letter-spacing: -0.5px; }
+    h2 {
+      font-size: 1.5rem; margin: 2.5rem 0 1rem; border-bottom: 1px solid var(--border);
+      padding-bottom: 0.4rem; letter-spacing: -0.25px;
+    }
+    h3 { font-size: 1.15rem; margin: 1.5rem 0 0.75rem; color: var(--accent); }
+    p { color: var(--text-muted); margin-bottom: 1rem; }
+    a.inline { color: var(--accent); text-decoration: underline; text-decoration-thickness: 2px;
+      text-underline-offset: 3px; }
+    a.inline:hover { color: var(--accent-hover); }
+
+    /* Badges / callouts */
+    .badge {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.75rem;
+      font-weight: 600; border: 1px solid var(--border); color: var(--text-muted);
+      margin-left: 0.5rem;
+    }
+    .badge.tech { border-color: var(--accent); color: var(--accent); background: rgba(99,102,241,0.1); }
+
+    .callout {
+      padding: 1rem 1.25rem; border-radius: var(--radius); margin: 1.5rem 0;
+      border-left: 4px solid var(--accent); background: rgba(99,102,241,0.05);
+    }
+    .callout.warn { border-left-color: #f59e0b; background: rgba(245,158,11,0.05); }
+    .callout p { margin: 0; color: var(--text-muted); font-size: 0.95rem; }
+
+    /* Code blocks */
+    pre {
+      background: var(--code-bg); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1rem; overflow-x: auto;
+      margin: 1rem 0; font-size: 0.85rem; line-height: 1.5;
+    }
+    code { font-family: "Menlo", "Monaco", "Consolas", monospace; }
+    pre code { padding: 0; color: #c9d1d9; }
+    .language-text::before { content: attr(data-lang); display: block;
+      font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.9rem; }
+    th, td { border: 1px solid var(--border); padding: 0.75rem; text-align: left; }
+    th { background: var(--surface); color: var(--text); font-weight: 600; }
+    tr:nth-child(even) { background: var(--surface-hover); }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1.5rem; }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border); padding: 2.5rem 0; color: var(--text-muted);
+      font-size: 0.85rem; text-align: center; margin-top: 3rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .docs-layout { flex-direction: column; padding: 2rem 0; }
+      .sidebar {
+        width: 100%; border-right: none; border-bottom: 1px solid var(--border);
+        position: static; height: auto; padding-right: 0; padding-bottom: 1rem;
+      }
+      .sidebar .section-title { margin-top: 1rem; }
+      .main { padding: 0; }
+    }
+    @media (max-width: 768px) {
+      .menu-toggle { display: block; }
+      .nav-links {
+        position: absolute; top: 64px; left: 0; right: 0;
+        flex-direction: column; background: var(--surface);
+        border-bottom: 1px solid var(--border); padding: 1.5rem; gap: 0.5rem;
+        display: none;
+      }
+      .nav-links.open { display: flex; }
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <a href="#" class="logo">DOKU.</a>
+    <nav class="nav-links" id="navLinks">
+      <a href="#overview" class="active">Overview</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#api-integration">API Integration</a>
+      <a href="#database">Database Schema</a>
+      <a href="#project-structure">Project Structure</a>
+      <a href="#tech-stack">Tech Stack</a>
+    </nav>
+    <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">&#9776;</button>
+  </div>
+</header>
+
+<div class="docs-layout">
+  <aside class="sidebar">
+    <div class="section-title">Contents</div>
+    <ul>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#architecture">Clean Architecture</a></li>
+      <li><a href="#api-integration">OpenDota API Integration</a></li>
+      <li><a href="#database">Database Schema</a></li>
+      <li><a href="#project-structure">Project Structure</a></li>
+      <li><a href="#tech-stack">Tech Stack</a></li>
+    </ul>
+  </aside>
+
+  <main class="main">
+    <article>
+
+      <section id="overview">
+        <h1>Dota Tracker <span class="badge tech">v0.1.0</span></h1>
+        <p>Dota Tracker is a professional desktop analytics application for Dota 2. It provides a PySide6 UI backed by PostgreSQL to ingest data from OpenDota, persist it reliably, and deliver analytics and visualizations for players, matches, heroes, and items.</p>
+        <div class="callout">
+          <p><strong>Status:</strong> Foundation layers (Phase 0) complete. GUI implementation is deferred until Phases 0–3 are complete.</p>
+        </div>
+        <h3>Core goals</h3>
+        <ul style="margin-left: 1.25rem; color: var(--text-muted);">
+          <li>Clean Architecture with dependencies pointing inward: Presentation → Application → Domain; Infrastructure implements Application ports.</li>
+          <li>GUI never blocks &mdash; API calls run in QThreadPool workers via QRunnable, emitting signals back to the GUI thread.</li>
+          <li>OpenDota rate limit (~60 req/min unauthenticated) mitigated with a token bucket limiter, exponential backoff with jitter, and optional API key.</li>
+          <li>No hardcoded secrets &mdash; configuration via pydantic-settings from environment variables / .env.</li>
+          <li>PostgreSQL with tables players, matches, heroes, items, player_matches using JSONB for flexible API response storage.</li>
+        </ul>
+      </section>
+
+      <section id="architecture">
+        <h2>Clean Architecture <span class="badge tech">Domain &rarr; Application &rarr; Presentation</span></h2>
+        <p>Dota Tracker follows Clean Architecture (ports and adapters) so business logic stays independent of frameworks, UI, database engines, and external APIs.</p>
+
+        <h3>Layers</h3>
+        <table>
+          <thead><tr><th style="width:22%">Layer</th><th>Responsibilities</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Domain</strong></td>
+              <td>Core entities (Player, Match, Hero, Item, PlayerMatch), value objects, domain services, business rules, repository interfaces. Pure Python &mdash; no I/O, SQLAlchemy, HTTP, or Qt.</td>
+            </tr>
+            <tr>
+              <td><strong>Application</strong></td>
+              <td>Use cases (e.g. sync player matches), port definitions (OpenDotaGateway, UnitOfWork), DTOs, orchestration. Depends on domain only.</td>
+            </tr>
+            <tr>
+              <td><strong>Infrastructure</strong></td>
+              <td>Adapters implementing ports: SQLAlchemy repositories, Alembic migrations, OpenDota HTTP client, pydantic-settings config, loguru logging.</td>
+            </tr>
+            <tr>
+              <td><strong>Presentation</strong></td>
+              <td>PySide6 UI, views, view models. Depends on application use cases/DTOs only &mdash; no direct DB or HTTP logic.</td>
+            </tr>
+            <tr>
+              <td><strong>Analytics</strong></td>
+              <td>Metrics, aggregations, pandas/numpy computation, matplotlib visualizations consuming domain/application outputs.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Dependency rule</h3>
+        <pre><code>Presentation  -->  Application  -->  Domain
+                         ^                 ^
+                         |                 |
+                    Analytics      Infrastructure (adapters)</code></pre>
+        <div class="callout warn">
+          <p>Inner layers must not import from outer layers. Domain has no framework dependencies; infrastructure never leaks SQLAlchemy/Qt types across port boundaries.</p>
+        </div>
+        <h3>Ports and adapters</h3>
+        <ul style="margin-left: 1.25rem; color: var(--text-muted);">
+          <li><strong>Ports</strong> are interfaces/protocols defined by the application layer (e.g. "fetch match by id", "persist player matches").</li>
+          <li><strong>Driving adapters</strong> (primary): UI controllers invoking use cases.</li>
+          <li><strong>Driven adapters</strong> (secondary): PostgreSQL repositories, OpenDota gateway, cache, clock.</li>
+        </ul>
+      </section>
+
+      <section id="api-integration">
+        <h2>OpenDota API Integration</h2>
+        <p>The integration lives in the infrastructure layer behind the <code>OpenDotaGateway</code> application port, keeping domain/application logic independent of HTTP and provider details.</p>
+
+        <h3>Components</h3>
+        <ul style="margin-left: 1.25rem; color: var(--text-muted);">
+          <li><strong>OpenDotaClient</strong> &mdash; low-level sync HTTP client on <code>httpx.Client</code>: base URL, auth params, timeouts, retries, rate limiting.</li>
+          <li><strong>OpenDotaGateway</strong> &mdash; adapter implementing the application port. Operations: <code>get_player(account_id)</code>, <code>get_player_recent_matches()</code>, <code>get_match(match_id)</code>, <code>get_heroes()</code>, <code>get_items()</code>.</li>
+          <li><strong>Response models</strong> &mdash; Pydantic v2 models for OpenDota payloads (extra fields tolerated for drift), with mappers to application DTOs.</li>
+          <li><strong>Endpoint registry</strong> &mdash; centralized path builders (<code>/players/{id}</code>, <code>/players/{id}/matches</code>, <code>/matches/{id}</code>, <code>/heroes</code>, <code>/items</code>).</li>
+        </ul>
+
+        <h3>Rate limiting</h3>
+        <ul style="margin-left: 1.25rem; color: var(--text-muted);">
+          <li>Token bucket / sliding window limiter &mdash; acquire a permit before each request.</li>
+          <li>Concurrency cap via semaphore for async batch fetches.</li>
+          <li>On HTTP <code>429</code>, respect <code>Retry-After</code> when present; otherwise exponential backoff with jitter.</li>
+          <li>Shared limiter across gateway methods to prevent accidental bursts.</li>
+        </ul>
+
+        <h3>Retry logic</h3>
+        <ul style="margin-left: 1.25rem; color: var(--text-muted);">
+          <li>Retryable: network errors, <code>429</code>, <code>500/502/503/504</code>.</li>
+          <li>Non-retryable (fail fast): <code>400/401/403/404/422</code> and validation failures.</li>
+          <li>Exponential backoff with jitter (base 0.5s, max 30s); bounded by <code>OPENDOTA_MAX_RETRIES</code>.</li>
+        </ul>
+
+        <h3>Sync vs async</h3>
+        <table>
+          <thead><tr><th style="width:45%">Scenario</th><th>Preferred</th></tr></thead>
+          <tbody>
+            <tr><td>Single player/match fetch from UI</td><td>Sync (httpx.Client)</td></tr>
+            <tr><td>Bulk historical sync (many matches/players)</td><td>Async (bounded concurrency)</td></tr>
+            <tr><td>Periodic scheduled sync</td><td>Sync or Async (idempotent jobs)</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Configuration</h3>
+        <ul style="margin-left: 1.25rem; color: var(--text-muted);">
+          <li><code>OPENDOTA_BASE_URL</code>, <code>OPENDOTA_API_KEY</code> (optional), <code>OPENDOTA_TIMEOUT_SECONDS</code>, <code>OPENDOTA_MAX_RETRIES</code>, <code>OPENDOTA_RATE_LIMIT_RPM</code>.</li>
+          <li>Never hardcode API keys; validate settings at startup; redact secrets from logs.</li>
+        </ul>
+      </section>
+
+      <section id="database">
+        <h2>Database Schema <span class="badge tech">PostgreSQL 16 + SQLAlchemy 2.x + Alembic</span></h2>
+        <p>Five core tables with JSONB columns for raw API payload snapshots. Primary keys are surrogate integers; natural/external IDs are unique and indexed.</p>
+
+        <h3>players</h3>
+        <table>
+          <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>id</td><td>BIGSERIAL PK</td><td></td></tr>
+            <tr><td>account_id</td><td>BIGINT UQ</td><td>OpenDota/Steam32</td></tr>
+            <tr><td>persona_name, steam_id, avatar_url, profile_url, country_code</td><td>TEXT/VARCHAR</td><td>Nullable</td></tr>
+            <tr><td>last_match_time</td><td>TIMESTAMPTZ</td><td></td></tr>
+            <tr><td>is_tracked</td><td>BOOLEAN</td><td>Default FALSE</td></tr>
+            <tr><td>raw_profile</td><td>JSONB</td><td>Raw API snapshot</td></tr>
+          </tbody>
+        </table>
+
+        <h3>heroes</h3>
+        <table>
+          <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>id</td><td>SERIAL PK</td><td></td></tr>
+            <tr><td>hero_id</td><td>INTEGER UQ</td><td>OpenDota hero ID</td></tr>
+            <tr><td>name, localized_name</td><td>VARCHAR</td><td></td></tr>
+            <tr><td>primary_attr, attack_type, legs</td><td>VARCHAR/SMALLINT</td><td>Nullable</td></tr>
+            <tr><td>roles</td><td>JSONB</td><td>Array of roles</td></tr>
+            <tr><td>raw_data</td><td>JSONB</td><td>Raw API snapshot</td></tr>
+          </tbody>
+        </table>
+
+        <h3>items</h3>
+        <table>
+          <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>id</td><td>SERIAL PK</td><td></td></tr>
+            <tr><td>item_id</td><td>INTEGER UQ</td><td>OpenDota item ID</td></tr>
+            <tr><td>name, localized_name, cost</td><td>VARCHAR/INTEGER</td><td>Nullable</td></tr>
+            <tr><td>is_recipe, in_secret_shop, in_side_shop</td><td>BOOLEAN</td><td>Default FALSE</td></tr>
+            <tr><td>raw_data</td><td>JSONB</td><td>Raw API snapshot</td></tr>
+          </tbody>
+        </table>
+
+        <h3>matches</h3>
+        <table>
+          <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>id</td><td>BIGSERIAL PK</td><td></td></tr>
+            <tr><td>match_id</td><td>BIGINT UQ</td><td>OpenDota match ID</td></tr>
+            <tr><td>start_time, duration_seconds, game_mode, lobby_type</td><td>TIMESTAMPTZ/INTEGER</td><td>Nullable</td></tr>
+            <tr><td>radiant_win, radiant_score, dire_score</td><td>BOOLEAN/INTEGER</td><td></td></tr>
+            <tr><td>raw_match</td><td>JSONB</td><td>Raw API snapshot</td></tr>
+          </tbody>
+        </table>
+
+        <h3>player_matches (fact table)</h3>
+        <table>
+          <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>id</td><td>BIGSERIAL PK</td><td>Surrogate</td></tr>
+            <tr><td>match_id</td><td>BIGINT FK</td><td>matches.id, CASCADE</td></tr>
+            <tr><td>player_id</td><td>BIGINT FK</td><td>players.id, SET NULL</td></tr>
+            <tr><td>account_id</td><td>BIGINT</td><td>Snapshot for anonymous players</td></tr>
+            <tr><td>hero_id</td><td>INTEGER FK</td><td>heroes.id, RESTRICT</td></tr>
+            <tr><td>player_slot, is_radiant</td><td>INTEGER, BOOLEAN</td><td></td></tr>
+            <tr><td>kills, deaths, assists, ..., level</td><td>INTEGER</td><td>Default 0 / nullable</td></tr>
+            <tr><td>item_0_id … item_neutral_id</td><td>INTEGER FK x7</td><td>items.id, SET NULL</td></tr>
+            <tr><td>raw_player</td><td>JSONB</td><td>Raw player payload</td></tr>
+          </tbody>
+        </table>
+
+        <div class="grid-2">
+          <div>
+            <h3>Key indexes &amp; constraints</h3>
+            <ul style="margin-left: 1.25rem; color: var(--text-muted); font-size: 0.9rem;">
+              <td>uq_players_account_id, uq_matches_match_id, uq_heroes_hero_id, uq_items_item_id</td></li>
+              <li>uq_player_matches_match_player_slot (match_id, player_slot)</li>
+              <li>Partial index on player_matches(account_id) WHERE account_id IS NOT NULL</li>
+              <li>Check constraints: non-negative kills/deaths/assists, player_slot 0–127</li>
+              <li>Indexes on start_time, game_mode, patch, player_id, hero_id, match_id + is_radiant</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Relationships</h3>
+            <ul style="margin-left: 1.25rem; color: var(--text-muted); font-size: 0.9rem;">
+              <li>players 1:N player_matches</li>
+              <li>matches 1:N player_matches</li>
+              <li>heroes 1:N player_matches</li>
+              <li>items 1:N player_matches (7 item slots)</li>
+              <li>Up to 10 player_matches rows per standard match</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="callout">
+          <p>Schema is evolved exclusively through Alembic migrations (initial migration: <code>0001_initial_schema</code>). Raw JSONB payloads are stored selectively for traceability.</p>
+        </div>
+      </section>
+
+      <section id="project-structure">
+        <h2>Project Structure</h2>
+        <pre><code>Dota_Tracker/
+├─ .env.example
+├─ .gitignore
+├─ AGENTS.md
+├─ Dockerfile
+├─ docker-compose.yml
+├─ pyproject.toml
+├─ README.md
+├─ alembic.ini
+├─ alembic/
+│  ├─ env.py
+│  └─ versions/
+│     └─ 0001_initial_schema.py
+├─ docs/
+│  ├─ architecture.md
+│  ├─ api_integration.md
+│  └─ database_schema.md
+├─ doku.html
+├─ src/
+│  └─ dota_tracker/
+│     ├─ __init__.py
+│     ├─ __main__.py        # headless entry point (GUI deferred)
+│     ├─ shared/            # kernel: constants, exceptions, logger, types, utils
+│     ├─ domain/            # entities, exceptions, repository ports
+│     ├─ application/       # DTOs, ports, use cases (SyncPlayerMatchesUseCase)
+│     ├─ infrastructure/
+│     │  ├─ settings.py
+│     │  ├─ database.py     # SQLAlchemy engine/session/Base
+│     │  ├─ models.py       # ORM models (players, matches, heroes, items, player_matches)
+│     │  ├─ repositories.py # SQLAlchemy repo + UnitOfWork implementations
+│     │  ├─ logging.py
+│     │  └─ opendota/
+│     │     ├─ client.py    # token bucket, retry/backoff
+│     │     ├─ gateway.py   # OpenDotaGateway adapter
+│     │     ├─ models.py    # OpenDota response models
+│     │     ├─ mappers.py   # OpenDota DTO -> application DTO
+│     │     └─ exceptions.py
+│     ├─ presentation/      # PySide6 UI (deferred)
+│     └─ analytics/         # metrics/visualizations (deferred)
+└─ tests/
+   ├─ test_domain_entities.py
+   ├─ test_dtos.py
+   ├─ test_mappers.py
+   ├─ test_opendota_client.py
+   ├─ test_shared_utils.py
+   └─ test_use_cases.py</code></pre>
+      </section>
+
+      <section id="tech-stack">
+        <h2>Technology Stack</h2>
+        <table>
+          <thead><tr><th style="width:30%">Area</th><th>Technology</th></tr></thead>
+          <tbody>
+            <tr><td>Language</td><td>Python 3.13</td></tr>
+            <tr><td>Desktop UI</td><td>PySide6 (Qt for Python)</td></tr>
+            <tr><td>Database</td><td>PostgreSQL 16</td></tr>
+            <tr><td>ORM / Migrations</td><td>SQLAlchemy 2.x, Alembic</td></tr>
+            <tr><td>Validation / Settings</td><td>Pydantic v2, pydantic-settings</td></tr>
+            <tr><td>HTTP Client</td><td>httpx</td></tr>
+            <tr><td>Analytics / Visualization</td><td>pandas, numpy, matplotlib</td></tr>
+            <tr><td>Logging</td><td>loguru</td></tr>
+            <tr><td>Configuration</td><td>.env + PyYAML</td></tr>
+            <tr><td>Testing / Quality</td><td>pytest, pytest-asyncio, pytest-cov, ruff, mypy (strict)</td></tr>
+            <tr><td>Containerization</td><td>Docker, Docker Compose</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Quality gates</h3>
+        <pre><code>pytest
+ruff check .
+ruff format --check .
+mypy src</code></pre>
+      </section>
+
+    </article>
+  </main>
+</div>
+
+<footer>
+  <div class="container">
+    <p>Dota Tracker &mdash; Professional desktop analytics for Dota 2 &middot; Clean Architecture &middot; Built with PySide6, PostgreSQL, SQLAlchemy, OpenDota</p>
+  </div>
+</footer>
+
+<script>
+  const menuToggle = document.getElementById('menuToggle');
+  const navLinks = document.getElementById('navLinks');
+
+  menuToggle.addEventListener('click', () => {
+    navLinks.classList.toggle('open');
+  });
+
+  document.querySelectorAll('.nav-links a').forEach((link) => {
+    link.addEventListener('click', () => {
+      navLinks.classList.remove('open');
+    });
+  });
+
+  // Highlight active nav item based on scroll position
+  const sections = document.querySelectorAll('section[id]');
+  const navItems = document.querySelectorAll('.nav-links a');
+
+  function setActive() {
+    let current = '';
+    sections.forEach((section) => {
+      const top = window.scrollY;
+      const offset = section.offsetTop - 100;
+      const height = section.offsetHeight;
+      if (top >= offset && top < offset + height) {
+        current = section.getAttribute('id');
+      }
+    });
+    navItems.forEach((a) => {
+      a.classList.remove('active');
+      if (a.getAttribute('href') === '#' + current) {
+        a.classList.add('active');
+      }
+    });
+  }
+
+  window.addEventListener('scroll', setActive);
+</script>
+</body>
+</html>
