@@ -90,7 +90,13 @@ def print_summary(summary):
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Dota Tracker - sync and analyze your Dota 2 stats")
     parser.add_argument("account_id", type=int, nargs="?", help="OpenDota/Steam32 account ID")
-    parser.add_argument("-l", "--limit", type=int, default=50, help="Number of recent matches to sync (default: 50)")
+    sync_amount = parser.add_mutually_exclusive_group()
+    sync_amount.add_argument(
+        "-l", "--limit", type=int, default=50, help="Number of recent matches to sync (default: 50)"
+    )
+    sync_amount.add_argument(
+        "--all-matches", action="store_true", help="Sync all matches available from OpenDota"
+    )
     parser.add_argument("-o", "--output", type=Path, default=Path("output"), help="Output directory for charts")
     parser.add_argument("--no-sync", action="store_true", help="Only show stats from DB, skip syncing from OpenDota")
     args = parser.parse_args(argv)
@@ -100,6 +106,9 @@ def main(argv: list[str] | None = None) -> int:
         print("\nError: account_id required. Find it from your OpenDota/Steam profile URL.")
         return 1
 
+    if not 1 <= args.account_id <= 4294967295 or args.limit < 1:
+        parser.error("account_id must be 1-4294967295 and limit must be positive")
+
     try:
         settings, session, client, use_case, player_repo, pm_repo, hero_repo = build_dependencies()
 
@@ -107,8 +116,9 @@ def main(argv: list[str] | None = None) -> int:
         summary_obj = None
 
         if not args.no_sync:
-            logger.info("Syncing player {id} (limit={limit})...", id=account_id, limit=args.limit)
-            result = use_case.execute(account_id, limit=args.limit)
+            limit = None if args.all_matches else args.limit
+            logger.info("Syncing player {id} (limit={limit})...", id=account_id, limit=limit)
+            result = use_case.execute(account_id, limit=limit)
             logger.info(
                 "Synced: players={p} matches={m} player_matches={pm}",
                 p=result.players_synced,

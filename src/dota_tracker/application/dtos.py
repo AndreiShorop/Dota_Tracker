@@ -210,6 +210,7 @@ class MatchDetailPlayer(BaseModel):
     hero_healing: int | None
     level: int | None
     items: list[MatchDetailItem]
+    purchase_log: list[dict[str, int | str | None]] | None = None
 
 
 class MatchDetail(BaseModel):

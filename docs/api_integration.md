@@ -18,7 +18,7 @@ database. The positive match ID must fit a signed 64-bit integer. The JSON objec
 `radiant_score`, `dire_score`, and `players`. Each player contains `account_id`, `player_slot`,
 `hero_id`, `hero_name`, `hero_image`, `persona_name`, `win`, `kills`, `deaths`, `assists`,
 `gold_per_min`, `xp_per_min`, `last_hits`, `hero_damage`, `tower_damage`, `hero_healing`,
-`level`, and `items`. Values not supplied by OpenDota are null; anonymous account IDs are null.
+`level`, `items`, and `purchase_log`. Values not supplied by OpenDota are null; anonymous account IDs are null.
 `win` is derived from `radiant_win` and `player_slot` (`< 128` is Radiant), or null if either
 is missing. Player order is the provider's order.
 
@@ -29,6 +29,16 @@ their ID with null metadata. Slots 0–5 are the main inventory, 6–9 correspon
 slots are omitted. Only asset paths matching the expected Steam CDN paths are exposed.
 Availability of slots, statistics, and names depends on OpenDota's match data and current
 catalog, which may not perfectly reflect an older patch.
+
+`purchase_log` is null when parsed purchase history is missing or unavailable, and an array
+when supplied (including an empty array). Each event contains `time` (integer seconds relative
+to match start, possibly negative), `key` (the OpenDota item key), and nullable `name` and
+`image` from the current item catalog. Events retain provider order, including simultaneous
+purchases and duplicates. Unknown keys remain present with null metadata; recipe keys are
+resolved independently. Unsafe names and image paths are not exposed. The log is not inferred
+from final inventory or aggregate purchase counts, and it does not report historical gold cost.
+Malformed purchase events are treated as provider schema failures. Consumers must still escape
+names and keys for their output context; JSON strings are not safe to insert directly into HTML.
 
 Responses are 404 for absent matches, 422 for invalid IDs, and 502 for provider/network/schema
 failures, with sanitized error messages. Match data is requested on every call; the two OpenDota

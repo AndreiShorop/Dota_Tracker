@@ -32,7 +32,7 @@ from dota_tracker.shared.types import AccountId
 
 AccountPath = Annotated[int, PathParam(ge=1, le=4294967295)]
 MatchPath = Annotated[int, PathParam(ge=1, le=9223372036854775807)]
-SyncLimit = Annotated[int, Query(ge=1, le=100)]
+SyncLimit = Annotated[int, Query(ge=1, le=2147483647)]
 DashboardDependency = Annotated[DashboardUseCase, Depends(dashboard_service)]
 SyncDependency = Annotated[SyncPlayerMatchesUseCase, Depends(sync_service)]
 MatchDetailDependency = Annotated[MatchDetailUseCase, Depends(match_detail_service)]
@@ -92,12 +92,16 @@ def create_app() -> FastAPI:
 
     @app.post("/api/players/{account_id}/sync", response_model=SyncResponse)
     def sync(
-        account_id: AccountPath, service: SyncDependency, request: Request, limit: SyncLimit = 50
+        account_id: AccountPath,
+        service: SyncDependency,
+        request: Request,
+        limit: SyncLimit = 50,
+        all_matches: bool = False,
     ) -> SyncResponse:
         origin = request.headers.get("origin")
         if origin is not None and origin != str(request.base_url).rstrip("/"):
             raise HTTPException(status_code=403, detail="Cross-origin sync is not allowed")
-        result = service.execute(AccountId(account_id), limit=limit)
+        result = service.execute(AccountId(account_id), limit=None if all_matches else limit)
         return SyncResponse(
             players_synced=result.players_synced,
             matches_synced=result.matches_synced,

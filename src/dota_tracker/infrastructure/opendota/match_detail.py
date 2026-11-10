@@ -18,6 +18,15 @@ from dota_tracker.infrastructure.opendota.exceptions import (
 from dota_tracker.infrastructure.opendota.mappers import parse_model
 
 
+class OpenDotaPurchase(BaseModel):
+    """One parsed purchase event, in seconds relative to match start."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    time: int = Field(strict=True)
+    key: str = Field(strict=True, min_length=1, max_length=128, pattern=r"^[a-z0-9_]+$")
+
+
 class OpenDotaMatchPlayer(BaseModel):
     """The fields actually used from a match participant."""
 
@@ -50,6 +59,7 @@ class OpenDotaMatchPlayer(BaseModel):
     backpack_3: int | None = Field(default=None, ge=0)
     item_neutral: int | None = Field(default=None, ge=0)
     item_neutral2: int | None = Field(default=None, ge=0)
+    purchase_log: list[OpenDotaPurchase] | None = None
 
 
 class OpenDotaMatchDetail(BaseModel):
@@ -109,17 +119,26 @@ def _image(path: str | None, category: str) -> str | None:
     return f"https://cdn.cloudflare.steamstatic.com{asset}"
 
 
+def _safe_name(name: str | None) -> str | None:
+    """Reject markup and control characters in catalog display names."""
+    if name is None or any(char in "<>" or not char.isprintable() for char in name):
+        return None
+    return name
+
+
 class MatchCatalogCache:
     """Cache validated catalogs per provider URL for one hour, across requests."""
 
     def __init__(self, ttl_seconds: float = 3600) -> None:
         self._ttl_seconds = ttl_seconds
         self._lock = Lock()
-        self._entries: dict[str, tuple[float, dict[int, CatalogHero], dict[int, CatalogItem]]] = {}
+        self._entries: dict[
+            str, tuple[float, dict[int, CatalogHero], dict[int | str, CatalogItem]]
+        ] = {}
 
     def get(
         self, client: OpenDotaClient, provider: str
-    ) -> tuple[dict[int, CatalogHero], dict[int, CatalogItem]]:
+    ) -> tuple[dict[int, CatalogHero], dict[int | str, CatalogItem]]:
         """Get cached catalogs, loading both atomically if missing or expired."""
         with self._lock:
             cached = self._entries.get(provider)
@@ -128,7 +147,9 @@ class MatchCatalogCache:
             heroes = parse_model(HeroCatalog, _json(client, "/constants/heroes"))
             items = parse_model(ItemCatalog, _json(client, "/constants/items"))
             hero_map = {hero.id: hero for hero in heroes.root.values()}
-            item_map = {item.id: item for item in items.root.values() if item.id is not None}
+            item_map: dict[int | str, CatalogItem] = {}
+            item_map.update(items.root)
+            item_map.update({item.id: item for item in items.root.values() if item.id is not None})
             self._entries[provider] = (time.monotonic() + self._ttl_seconds, hero_map, item_map)
             return hero_map, item_map
 
@@ -178,7 +199,7 @@ class OpenDotaMatchDetailReader:
         player: OpenDotaMatchPlayer,
         radiant_win: bool | None,
         heroes: dict[int, CatalogHero],
-        items: dict[int, CatalogItem],
+        items: dict[int | str, CatalogItem],
     ) -> MatchDetailPlayer:
         hero = heroes.get(player.hero_id) if player.hero_id is not None else None
         inventory = (
@@ -198,6 +219,17 @@ class OpenDotaMatchDetailReader:
         win = None
         if player.player_slot is not None and radiant_win is not None:
             win = radiant_win == (player.player_slot < 128)
+        purchase_log: list[dict[str, int | str | None]] | None = None
+        if player.purchase_log is not None:
+            purchase_log = []
+            for purchase in player.purchase_log:
+                item = items.get(purchase.key)
+                purchase_log.append({
+                    "time": purchase.time,
+                    "key": purchase.key,
+                    "name": _safe_name(item.dname) if item else None,
+                    "image": _image(item.img, "items") if item else None,
+                })
         return MatchDetailPlayer(
             account_id=player.account_id if player.account_id != 4294967295 else None,
             player_slot=player.player_slot,
@@ -217,4 +249,5 @@ class OpenDotaMatchDetailReader:
             hero_healing=player.hero_healing,
             level=player.level,
             items=final_items,
+            purchase_log=purchase_log,
         )

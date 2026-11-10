@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import replace
 from typing import cast
 
@@ -62,6 +63,9 @@ class FakeGateway:
 
     def get_match(self, match_id: int) -> MatchDTO | None:
         return None
+
+    def iter_player_matches(self, account_id: int, limit: int | None = 20) -> Iterator[MatchDTO]:
+        yield from self.get_player_recent_matches(account_id, limit=limit or 20)
 
     def get_heroes(self) -> list[HeroDTO]:
         return [

@@ -6,7 +6,7 @@ Infrastructure adapters implement these protocols.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from dota_tracker.domain.value_objects import MatchId
@@ -50,6 +50,11 @@ class OpenDotaGateway(Protocol):
 
     def get_player_recent_matches(self, account_id: AccountId, limit: int = 20) -> list[MatchDTO]:
         """Fetch recent matches for a player, newest first."""
+
+    def iter_player_matches(
+        self, account_id: AccountId, limit: int | None = 20
+    ) -> Iterator[MatchDTO]:
+        """Stream newest-first matches; None requests all provider-available matches."""
 
     def get_match(self, match_id: MatchId) -> MatchDTO | None:
         """Fetch a single match by OpenDota match id."""

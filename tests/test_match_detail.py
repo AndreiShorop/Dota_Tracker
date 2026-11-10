@@ -9,6 +9,7 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
+from dota_tracker.application.dtos import MatchDetailPlayer
 from dota_tracker.application.use_cases import MatchDetailUseCase
 from dota_tracker.domain.exceptions import MatchNotFoundError
 from dota_tracker.infrastructure.opendota.client import OpenDotaClient
@@ -37,9 +38,15 @@ MATCH = {
          "xp_per_min": 500, "last_hits": 50, "hero_damage": 9000,
          "tower_damage": 300, "hero_healing": 0, "level": 20,
          "item_0": 1, "item_1": 0, "item_2": None, "backpack_0": 2,
-         "item_neutral": 3, "item_neutral2": 9999, "purchase": {"tango": 99}},
+         "item_neutral": 3, "item_neutral2": 9999, "purchase": {"tango": 99},
+         "purchase_log": [{"time": -89, "key": "blink"},
+                          {"time": -89, "key": "recipe_blink"},
+                          {"time": -89, "key": "blink"},
+                          {"time": 5, "key": "no_id"},
+                          {"time": 6, "key": "unknown_item"},
+                          {"time": 7, "key": "unsafe"}]},
         {"account_id": None, "player_slot": 128, "hero_id": 999, "name": "Anonymous",
-         "kills": None, "item_0": 2},
+         "kills": None, "item_0": 2, "purchase_log": []},
         {"account_id": 4294967295, "player_slot": None, "hero_id": None},
     ],
 }
@@ -52,6 +59,8 @@ ITEMS = {
                      "img": "/apps/dota2/images/dota_react/items/recipe.png?t=1"},
     "neutral": {"id": 3, "dname": "Neutral", "img": "//evil.example/item.png"},
     "no_id": {"dname": "Unknown"},
+    "unsafe": {"dname": "<img src=x onerror=alert(1)>",
+               "img": "https://evil.example/item.png"},
 }
 
 
@@ -87,13 +96,29 @@ def test_full_api_contract_and_catalog_cache() -> None:
         assert set(radiant) == {"account_id", "player_slot", "hero_id", "hero_name",
                                 "hero_image", "persona_name", "win", "kills", "deaths",
                                 "assists", "gold_per_min", "xp_per_min", "last_hits",
-                                "hero_damage", "tower_damage", "hero_healing", "level", "items"}
+                                "hero_damage", "tower_damage", "hero_healing", "level", "items",
+                                "purchase_log"}
         assert radiant["hero_name"] == "Axe"
         assert radiant["hero_image"].endswith("/heroes/axe.png")
         assert radiant["win"] is False and dire["win"] is True and unknown["win"] is None
         assert radiant["kills"] == 0 and radiant["hero_healing"] == 0
         assert dire["kills"] is None and dire["hero_name"] is None
         assert unknown["account_id"] is None and unknown["items"] == []
+        assert dire["purchase_log"] == [] and unknown["purchase_log"] is None
+        assert radiant["purchase_log"] == [
+            {"time": -89, "key": "blink", "name": "Blink Dagger", "image":
+             "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/blink.png"},
+            {"time": -89, "key": "recipe_blink", "name": "Recipe", "image":
+             "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/recipe.png"},
+            {"time": -89, "key": "blink", "name": "Blink Dagger", "image":
+             "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/blink.png"},
+            {"time": 5, "key": "no_id", "name": "Unknown", "image": None},
+            {"time": 6, "key": "unknown_item", "name": None, "image": None},
+            {"time": 7, "key": "unsafe", "name": None, "image": None},
+        ]
+        assert MatchDetailPlayer.model_validate(
+            {key: value for key, value in unknown.items() if key != "purchase_log"}
+        ).purchase_log is None
         assert radiant["items"] == [
             {"slot": 0, "id": 1, "name": "Blink Dagger", "image":
              "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/blink.png"},
@@ -124,6 +149,43 @@ def test_missing_match_never_requests_catalog(body: object, status: int) -> None
         with pytest.raises(MatchNotFoundError):
             MatchDetailUseCase(reader).execute(123)
     assert calls == ["/api/matches/123"]
+
+
+@pytest.mark.parametrize("purchase_log", [
+    {}, "invalid", [None], [{}], [{"time": None, "key": "blink"}],
+    [{"time": True, "key": "blink"}], [{"time": 1.5, "key": "blink"}],
+    [{"time": "1", "key": "blink"}], [{"time": 1}],
+    [{"time": 1, "key": ""}], [{"time": 1, "key": 5}],
+    [{"time": 1, "key": "<script>"}], [{"time": 1, "key": "a" * 129}],
+])
+def test_invalid_purchase_log_returns_sanitized_502(
+    purchase_log: object, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={
+            "match_id": 123, "players": [{"purchase_log": purchase_log}],
+        })
+
+    with make_client(handler) as provider:
+        monkeypatch.setattr(composition, "OpenDotaClient", lambda **kwargs: provider)
+        response = TestClient(create_app()).get("/api/matches/123")
+    assert response.status_code == 502
+    assert response.json() == {"detail": "Match detail service unavailable"}
+
+
+def test_explicit_null_purchase_log_is_unavailable() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if "/matches/" in request.url.path:
+            return httpx.Response(200, json={
+                "match_id": 123, "players": [{"purchase_log": None, "purchase": {"blink": 1}}],
+            })
+        return httpx.Response(200, json=HEROES if request.url.path.endswith("heroes") else ITEMS)
+
+    with make_client(handler) as client:
+        result = OpenDotaMatchDetailReader(client, MatchCatalogCache(), "provider")
+        detail = result.get_match_detail(123)
+    assert detail is not None
+    assert detail.players[0].purchase_log is None
 
 
 @pytest.mark.parametrize("payload", [[], {"match_id": 123},

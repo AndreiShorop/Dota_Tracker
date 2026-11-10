@@ -7,7 +7,9 @@ fulfil a single user/business request.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from dataclasses import replace
 from datetime import datetime
+from typing import TypeVar
 
 from dota_tracker.application.dtos import (
     DashboardPlayer,
@@ -37,6 +39,12 @@ from dota_tracker.domain.repositories import (
 )
 from dota_tracker.shared.types import AccountId, HeroId, ItemId, MatchId, PlayerId
 from dota_tracker.shared.utils import to_datetime
+
+T = TypeVar("T")
+
+
+def _prefer(value: T | None, fallback: T | None) -> T | None:  # noqa: UP047
+    return value if value is not None else fallback
 
 
 class DashboardUseCase:
@@ -102,12 +110,12 @@ class SyncPlayerMatchesUseCase:
         self._item_repo = item_repo
         self._unit_of_work = unit_of_work
 
-    def execute(self, account_id: AccountId, limit: int = 20) -> SyncResult:
+    def execute(self, account_id: AccountId, limit: int | None = 20) -> SyncResult:
         """Run the sync for the given account id.
 
         Args:
             account_id: OpenDota/Steam32 account identifier.
-            limit: Maximum number of recent matches to sync.
+            limit: Maximum number of recent matches, or None for all available matches.
 
         Returns:
             A :class:`SyncResult` summarizing what was persisted.
@@ -115,6 +123,18 @@ class SyncPlayerMatchesUseCase:
         Raises:
             PlayerNotFoundError: if the OpenDota gateway returns no player.
         """
+        if not 1 <= int(account_id) <= 4294967295:
+            raise ValueError("Invalid account ID")
+        if limit is not None and (isinstance(limit, bool) or limit < 1):
+            raise ValueError("Match limit must be positive or None")
+        try:
+            return self._execute(account_id, limit)
+        except Exception:
+            if self._unit_of_work is not None:
+                self._unit_of_work.rollback()
+            raise
+
+    def _execute(self, account_id: AccountId, limit: int | None) -> SyncResult:
         result = SyncResult(account_id=int(account_id))
 
         player_dto = self._gateway.get_player(account_id)
@@ -133,18 +153,17 @@ class SyncPlayerMatchesUseCase:
                 Player(
                     id=existing_player.id,
                     account_id=player.account_id,
-                    persona_name=player.persona_name,
-                    steam_id=player.steam_id,
-                    avatar_url=player.avatar_url,
-                    profile_url=player.profile_url,
-                    country_code=player.country_code,
-                    last_match_time=player.last_match_time,
+                    persona_name=player.persona_name or existing_player.persona_name,
+                    steam_id=player.steam_id or existing_player.steam_id,
+                    avatar_url=player.avatar_url or existing_player.avatar_url,
+                    profile_url=player.profile_url or existing_player.profile_url,
+                    country_code=player.country_code or existing_player.country_code,
+                    last_match_time=player.last_match_time or existing_player.last_match_time,
                     is_tracked=existing_player.is_tracked,
+                    raw_profile=existing_player.raw_profile,
                 )
             )
         result.players_synced = 1
-
-        match_dtos = list(self._gateway.get_player_recent_matches(account_id, limit=limit))
 
         hero_dtos = list(self._gateway.get_heroes())
         item_dtos = list(self._gateway.get_items())
@@ -152,7 +171,7 @@ class SyncPlayerMatchesUseCase:
 
         hero_map = {h.hero_id: h for h in self._hero_repo.get_all_active()}
 
-        for match_dto in match_dtos:
+        for match_dto in self._gateway.iter_player_matches(account_id, limit=limit):
             match = self._map_match_dto(match_dto)
             existing = self._match_repo.get_by_external_id(match.match_id)
             if existing is None:
@@ -162,19 +181,18 @@ class SyncPlayerMatchesUseCase:
                     Match(
                         id=existing.id,
                         match_id=match.match_id,
-                        start_time=match.start_time,
-                        duration_seconds=match.duration_seconds,
-                        game_mode=match.game_mode,
-                        lobby_type=match.lobby_type,
-                        radiant_win=match.radiant_win,
-                        radiant_score=match.radiant_score,
-                        dire_score=match.dire_score,
-                        patch=match.patch,
-                        region=match.region,
-                        radiant_team_id=match.radiant_team_id,
-                        dire_team_id=match.dire_team_id,
-                        outcome=match.compute_outcome(),
-                        raw_match=match.raw_match,
+                        start_time=_prefer(match.start_time, existing.start_time),
+                        duration_seconds=_prefer(match.duration_seconds, existing.duration_seconds),
+                        game_mode=_prefer(match.game_mode, existing.game_mode),
+                        lobby_type=_prefer(match.lobby_type, existing.lobby_type),
+                        radiant_win=_prefer(match.radiant_win, existing.radiant_win),
+                        radiant_score=_prefer(match.radiant_score, existing.radiant_score),
+                        dire_score=_prefer(match.dire_score, existing.dire_score),
+                        patch=_prefer(match.patch, existing.patch),
+                        region=_prefer(match.region, existing.region),
+                        radiant_team_id=_prefer(match.radiant_team_id, existing.radiant_team_id),
+                        dire_team_id=_prefer(match.dire_team_id, existing.dire_team_id),
+                        raw_match=existing.raw_match,
                     )
                 )
             result.matches_synced += 1
@@ -192,46 +210,35 @@ class SyncPlayerMatchesUseCase:
                 match_internal_id=saved_match.id,
                 hero_internal_id=hero.id,
             )
-            if player_match.match_id is None:
-                continue
             existing_pm = self._player_match_repo.get_by_match_and_slot(
                 player_match.match_id, player_match.player_slot
             )
             if existing_pm is None:
                 self._player_match_repo.add(player_match)
             else:
-                self._player_match_repo.save(
-                    PlayerMatch(
-                        id=existing_pm.id,
-                        match_id=player_match.match_id,
-                        player_id=player_match.player_id,
-                        account_id=player_match.account_id,
-                        hero_id=player_match.hero_id,
-                        player_slot=player_match.player_slot,
-                        is_radiant=player_match.is_radiant,
-                        win=player_match.win,
-                        kills=player_match.kills,
-                        deaths=player_match.deaths,
-                        assists=player_match.assists,
-                        gold_per_min=player_match.gold_per_min,
-                        xp_per_min=player_match.xp_per_min,
-                        last_hits=player_match.last_hits,
-                        denies=player_match.denies,
-                        hero_damage=player_match.hero_damage,
-                        tower_damage=player_match.tower_damage,
-                        hero_healing=player_match.hero_healing,
-                        level=player_match.level,
-                        item_0_id=player_match.item_0_id,
-                        item_1_id=player_match.item_1_id,
-                        item_2_id=player_match.item_2_id,
-                        item_3_id=player_match.item_3_id,
-                        item_4_id=player_match.item_4_id,
-                        item_5_id=player_match.item_5_id,
-                        item_neutral_id=player_match.item_neutral_id,
-                        lane=player_match.lane,
-                        role=player_match.role,
-                    )
-                )
+                self._player_match_repo.save(replace(
+                    existing_pm,
+                    player_id=player_match.player_id,
+                    account_id=player_match.account_id,
+                    hero_id=player_match.hero_id,
+                    is_radiant=player_match.is_radiant,
+                    win=_prefer(player_match.win, existing_pm.win),
+                    kills=match_dto.kills if match_dto.kills is not None else existing_pm.kills,
+                    deaths=match_dto.deaths if match_dto.deaths is not None else existing_pm.deaths,
+                    assists=(
+                        match_dto.assists if match_dto.assists is not None else existing_pm.assists
+                    ),
+                    gold_per_min=_prefer(player_match.gold_per_min, existing_pm.gold_per_min),
+                    xp_per_min=_prefer(player_match.xp_per_min, existing_pm.xp_per_min),
+                    last_hits=_prefer(player_match.last_hits, existing_pm.last_hits),
+                    denies=_prefer(player_match.denies, existing_pm.denies),
+                    hero_damage=_prefer(player_match.hero_damage, existing_pm.hero_damage),
+                    tower_damage=_prefer(player_match.tower_damage, existing_pm.tower_damage),
+                    hero_healing=_prefer(player_match.hero_healing, existing_pm.hero_healing),
+                    level=_prefer(player_match.level, existing_pm.level),
+                    lane=_prefer(player_match.lane, existing_pm.lane),
+                    role=_prefer(player_match.role, existing_pm.role),
+                ))
             result.player_matches_synced += 1
 
         if self._unit_of_work is not None:
@@ -339,6 +346,7 @@ class SyncPlayerMatchesUseCase:
                         roles=hero.roles,
                         legs=hero.legs,
                         is_active=hero.is_active,
+                        raw_data=existing.raw_data,
                     )
                 )
         for item_dto in items:
@@ -365,6 +373,7 @@ class SyncPlayerMatchesUseCase:
                         is_recipe=item.is_recipe,
                         in_secret_shop=item.in_secret_shop,
                         in_side_shop=item.in_side_shop,
+                        raw_data=existing_item.raw_data,
                     )
                 )
 

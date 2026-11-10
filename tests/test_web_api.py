@@ -58,9 +58,9 @@ class FakeReader:
 
 class FakeSync:
     def __init__(self) -> None:
-        self.calls: list[tuple[int, int]] = []
+        self.calls: list[tuple[int, int | None]] = []
 
-    def execute(self, account_id: AccountId, limit: int) -> SyncResult:
+    def execute(self, account_id: AccountId, limit: int | None) -> SyncResult:
         self.calls.append((account_id, limit))
         return SyncResult(account_id=account_id, players_synced=1, matches_synced=2,
                           player_matches_synced=2)
@@ -97,12 +97,15 @@ def test_sync_and_validation(api: tuple[TestClient, FakeSync]) -> None:
         "players_synced": 1, "matches_synced": 2, "player_matches_synced": 2,
     }
     assert client.post("/api/players/42/sync?limit=100").status_code == 200
+    assert client.post("/api/players/42/sync?limit=101").status_code == 200
+    assert client.post("/api/players/42/sync?all_matches=true").status_code == 200
+    assert client.post("/api/players/42/sync?all_matches=true&limit=1").status_code == 200
     for path in ("/api/players/0/dashboard", "/api/players/-1/dashboard",
                  "/api/players/4294967296/dashboard", "/api/players/nope/dashboard",
-                 "/api/players/42/sync?limit=0", "/api/players/42/sync?limit=101"):
+                 "/api/players/42/sync?limit=0", "/api/players/42/sync?limit=2147483648"):
         response = client.post(path) if "/sync" in path else client.get(path)
         assert response.status_code == 422
-    assert sync.calls == [(42, 50), (42, 100)]
+    assert sync.calls == [(42, 50), (42, 100), (42, 101), (42, None), (42, None)]
 
 
 def test_sync_rejects_cross_origin_requests(api: tuple[TestClient, FakeSync]) -> None:
